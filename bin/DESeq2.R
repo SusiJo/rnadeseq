@@ -17,6 +17,7 @@ library(optparse)
 library(svglite)
 library(extrafont)
 library(limma)
+library(EnsDb.Hsapiens.v75)
 
 # clean up graphs
 graphics.off()
