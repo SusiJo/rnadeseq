@@ -278,6 +278,9 @@ Linear model function to calculate the contrasts (TXT). Variable names should be
 
 Contrasts represent 2 or more conditions to be compared. One should compare the **Experiment** versus **Control** for correct differential expression analysis (and not the other way round). There are three different parameters that can be used to define contrasts, which are explained in the following sections. One or multiple contrast input files can be provided, if multiple are provided, the contrasts in the multiple files will be added to the report.
 
+
+> **⚠️ Warning:** Do NOT use underscores within a condition name: `Group1_my_long_condition_name`. Use `Group1-my-long-condition-name` or `Group1.my.long.condition.name` instead.
+
 ### Default
 
 By default, DESeq2 will calculate pairwise contrasts given a linear model file. If you do not provide any contrast files, the differential gene expression analysis will be performed with the default contrasts as calculated by DESeq2. Try this option first, if you are unsure about your contrasts.
@@ -288,7 +291,7 @@ Sometimes condition factors have obvious levels. By default, the base level of a
 
 ```tsv
 factor  level
-condition_genotype  wild_type
+condition_genotype  wildtype
 condition_treatment control
 
 ```
@@ -298,7 +301,7 @@ condition_treatment control
 Table in tsv format indicating which contrasts to consider. Each contrast is specified in one column, the rows correspond to each of the expanded terms of the linear model. If you are unsure about how the linear model expanded terms look like, run the pipeline once without specifying contrasts, then the coefficient terms for the provided model will be stored under "differential_gene_expression/metadata/DESeq2_coefficients.tsv". An example input tsv file is shown here:
 
 ```tsv
-coefficient treatment_treated_vs_control  genotype_KO_vs_WT
+coefficient condition_treatment_treated_vs_control  condition_genotype_KO_vs_WT
 intercept 0 0
 condition_treatment_treated 1 0
 condition_genotype_KO 0  1
@@ -307,14 +310,20 @@ condition_genotype_KO 0  1
 
 ### `--contrast_list`
 
-Table in tsv format indicating which contrasts to consider. Each contrast is specified in one row. The columns correspond to the factor, the level to be considered in the numerator and the level to be considered in the denominator of the contrast. For example:
+Table in tsv format indicating which contrasts to consider. Each contrast is specified in one row. The columns correspond to the factor, the level to be considered in the numerator and the level to be considered in the denominator of the contrast.
+
+In case of more complex contrast names please separate the complex names by anything else than `_` as the underscores are used to split the long names and display them nicely in the report.
+Allowed characters for separating complex names are: `-./` or a combination of upper and lowercase, i.e. <u>`Group1-cancer-control`</u> or <u>`Group1.cancer.control`</u> or <u>`Group1CancerControl`</u>.
 
 ```tsv
 factor  numerator denominator
 condition_treatment treated control
 condition_genotype  KO  WT
-
+condition_state Group1-cancer-control Group2-cancer-control
+condition_group InhibitorA InhibitorB
+condition_age  g1.10y-20y  g2.20-30y
 ```
+
 
 ### `--contrast_pairs`
 
@@ -322,7 +331,7 @@ Table in tsv format indicating pairs of contrasts to consider. This is used to c
 
 ```tsv
 contrast_name contrast_numerator contrast_denominator
-interaction_effect condition_treatment_treated_vs_control  condition_genotype_KO_vs_WT
+interaction_treatment_genotype condition_treatment_Treated_vs_Control  condition_genotype_KO_vs_WT
 
 ```
 

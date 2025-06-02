@@ -1917,20 +1917,29 @@ write.table(DE_genes_final_table, "differential_gene_expression/final_gene_table
 <!-- contrast calculation end -->
 
 ```{r print_contrasts, eval=F}
-for (i in 1:length(contrast_names)){
+if (isProvided(params$path_contrast_pairs)){
+    for (i in 1:length(contrast_names)){
+        conditionA <- sapply(strsplit(contrast_names[i], '_'), function(x) paste(x[2], collapse=' '))
+        conditionB <- sapply(strsplit(contrast_names[i], '_'), function(x) paste(x[3], collapse=' '))
+        cat(paste("* Interaction effect between", conditionA, "and", conditionB, "\n"))
+
+    }
+} else {
+    for (i in 1:length(contrast_names)){
     contrast_len <- sapply(strsplit(contrast_names[i], '_'), length)
     current_condition <- sapply(strsplit(contrast_names[i], '_'), function(x) paste(x[2], collapse=' '))
     current_contrast_name <- sapply(strsplit(contrast_names[i], '_'), function(x) paste(x[(contrast_len-2):contrast_len], collapse=' '))
     cat(paste("* Comparison: ", current_condition, ":", current_contrast_name, "\n"))
+    }
+    cat(paste("The expression profile of the first group (treatment) was compared to the second group (control)."))
 }
+
 ```
 
 
 ```{r, print_contrasts, eval=T, results='asis', warning=FALSE, message=FALSE}
 ```
 
-
-The expression profile of the first group (treatment) was compared to the second group (control).
 
 ```{r load_config, bootstrap.show.message=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 logFC_text <- as.character(params$logFC_threshold)
@@ -2072,8 +2081,13 @@ for (file in allgenes_files){
     DE_genes$contrast <- rep(fname, nrow(DE_genes))
     contrast_len <- sapply(strsplit(fname, '_'), length)
     # Rename Contrast for plot
-    # DE_contrast_condition_conditionName_conditionA_vs_conditionB --> conditionA vs conditionB
-    current_contrast_name <- sapply(strsplit(fname, '_'), function(x) paste(x[5:contrast_len], collapse=' '))
+    if (isProvided(params$path_contrast_pairs)){
+        # DE_contrast_interaction_conditionA_conditionB --> conditionA vs conditionB
+        current_contrast_name <- sapply(strsplit(fname, '_'), function(x) paste(x[4:contrast_len], collapse=' '))
+    } else {
+        # DE_contrast_condition_conditionName_conditionA_vs_conditionB --> conditionA vs conditionB
+        current_contrast_name <- sapply(strsplit(fname, '_'), function(x) paste(x[5:contrast_len], collapse=' '))
+    }
     contrast_list <- c(contrast_list, current_contrast_name)
 
     # label: gene_name
@@ -2243,14 +2257,26 @@ for (file in allgenes_files){
 
 # Show the volcano plots in tabs
 for (i in 1:length(volcano_list)){
-    cat("#### Contrast: ", contrast_list[[i]], "\n")
-    cat("\n")
-    baseline_contrast <- sapply(strsplit(contrast_list[i], ' '), function(x) paste(x[3], collapse=' '))
-    experiment_contrast <- sapply(strsplit(contrast_list[i], ' '), function(x) paste(x[1], collapse=' '))
-    cat(paste('A positive log2FC indicates an upregulation of a gene in', experiment_contrast, 'compared to', baseline_contrast, '.'))
-    cat("\n\n")
-    print(volcano_list[[i]])
-    cat("\n\n")
+    if (isProvided(params$path_contrast_pairs)){
+         cat("#### Interaction: ", contrast_list[[i]], "\n")
+         cat("\n")
+        baseline_contrast <- sapply(strsplit(contrast_list[i], ' '), function(x) paste(x[2], collapse=' '))
+        experiment_contrast <- sapply(strsplit(contrast_list[i], ' '), function(x) paste(x[1], collapse=' '))
+        cat("\n\n")
+        print(volcano_list[[i]])
+        cat("\n\n")
+    }
+    else {
+        cat("#### Contrast: ", contrast_list[[i]], "\n")
+        cat("\n")
+        baseline_contrast <- sapply(strsplit(contrast_list[i], ' '), function(x) paste(x[3], collapse=' '))
+        experiment_contrast <- sapply(strsplit(contrast_list[i], ' '), function(x) paste(x[1], collapse=' '))
+        cat(paste('A positive log2FC indicates an upregulation of a gene in', experiment_contrast, 'compared to', baseline_contrast, '.'))
+        cat("\n\n")
+        print(volcano_list[[i]])
+        cat("\n\n")
+    }
+
 }
 
 ```
@@ -2953,7 +2979,14 @@ for (file in contrast_files){
     q = as.character(DE_genes$Ensembl_ID)
     q_list <- append(q_list, list(q))
     q_names <- append(q_names, fname)
-    contrast_list <- c(contrast_list, sapply(strsplit(fname, '_'), function(x) paste(x[5:contrast_len], collapse=' ')))
+
+    if (isProvided(params$path_contrast_pairs)){
+        # DE_contrast_interaction_conditionA_conditionB --> conditionA vs conditionB
+        contrast_list <- sapply(strsplit(fname, '_'), function(x) paste(x[4:contrast_len], collapse=' '))
+    } else {
+        # DE_contrast_condition_conditionName_conditionA_vs_conditionB --> conditionA vs conditionB
+        contrast_list <- sapply(strsplit(fname, '_'), function(x) paste(x[5:contrast_len], collapse=' '))
+    }
 }
 names(q_list) <- q_names
 
@@ -2991,7 +3024,12 @@ for (i in 1:length(q_names))  {
             y_max <- min(ceiling(-log10(min(path_enrich$p_value, na.rm=T))) + 3, 18)
 
         if (nrow(path_enrich) > 0){
-            cat('#### Contrast: ', contrast_list[i], '\n')
+            if (isProvided(params$path_contrast_pairs)){
+            cat("#### Interaction: ", contrast_list[[i]], "\n")
+            }
+            else {
+                cat("#### Contrast: ", contrast_list[[i]], "\n")
+            }
             cat("\n")
             cat("Please hover over the datapoints to display additional information.")
             cat("\n\n")
@@ -3074,9 +3112,19 @@ for (file in allgenes_files) {
         nrow()
 
     contrast_len <- sapply(strsplit(fname, "_"), length)
-    current_condition <- sapply(strsplit(contrast_names[i], '_'), function(x) paste(x[2], collapse=' '))
-    current_contrast_name <- sapply(strsplit(fname, '_'), function(x) paste(x[(contrast_len-2):contrast_len], collapse=' '))
-    cat(paste("* Comparison:", current_condition, ":", current_contrast_name, "has", numDE, "DE genes out of", num_all, "tested genes.\n"))
+    current_condition <- sapply(strsplit(fname, '_'), function(x) paste(x[4], collapse=' '))
+
+
+    if (isProvided(params$path_contrast_pairs)){
+        conditionA <- sapply(strsplit(fname, '_'), function(x) paste(x[2], collapse=' '))
+        conditionB <- sapply(strsplit(fname, '_'), function(x) paste(x[3], collapse=' '))
+        cat(paste("* Interaction effects between", conditionA, "and", conditionB, "have", numDE, "DE genes out of", num_all, "tested genes.\n"))
+    } else{
+        current_contrast_name <- sapply(strsplit(fname, '_'), function(x) paste(x[(contrast_len-2):contrast_len], collapse=' '))
+        cat(paste("* Comparison:", current_condition, ":", current_contrast_name, "has", numDE, "DE genes out of", num_all, "tested genes.\n"))
+    }
+
+
 }
 ```
 
