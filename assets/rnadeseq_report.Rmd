@@ -291,7 +291,7 @@ dir.create("differential_gene_expression/final_gene_table")
 
 
 
-```{r software_versions, bootstrap.show.message=FALSE, echo=FALSE, message=FALSE, eval=isProvided(params$path_software_versions)}
+```{r software_versions, bootstrap.show.message=FALSE, echo=FALSE, message=FALSE, eval=F}
 # Import the .csv or .yml file output by the rna-seq Nextflow pipeline
 software_versions_csv <- endsWith(params$path_software_versions, ".csv") || endsWith(params$path_software_versions, ".tsv")
 if (software_versions_csv) {
